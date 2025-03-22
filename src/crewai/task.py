@@ -155,7 +155,7 @@ class Task(BaseModel):
         default=None, description="End time of the task execution"
     )
     rci: Optional[bool] = Field(
-        default=True,
+        default=False,
         description="Recursive Criticism and Iteration (RCI) to verify the output matches the expected output.",
     )
     rci_max_count: int = Field(
@@ -201,7 +201,6 @@ class Task(BaseModel):
             # Check return annotation if present, but don't require it
             return_annotation = sig.return_annotation
             if return_annotation != inspect.Signature.empty:
-
                 return_annotation_args = get_args(return_annotation)
                 if not (
                     get_origin(return_annotation) is tuple
@@ -403,14 +402,15 @@ class Task(BaseModel):
                 tools=tools,
             )
 
-            result = self.critique_and_iterate(
-                agent=agent,
-                inital_output=result,
-                description=self.description,
-                expected_output=self.expected_output,
-                context=context,
-                tools=tools,
-            )
+            if self.rci:
+                result = self.critique_and_iterate(
+                    agent=agent,
+                    inital_output=result,
+                    description=self.description,
+                    expected_output=self.expected_output,
+                    context=context,
+                    tools=tools,
+                )
 
             pydantic_output, json_output = self._export_output(result)
             task_output = TaskOutput(
